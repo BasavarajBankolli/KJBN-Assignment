@@ -8,7 +8,8 @@ logic. Data flows: route -> service -> DataSF client -> normalized trucks
 import logging
 import math
 
-from app.clients.datasf import DataSFClient
+from app.clients.datasf import DATASF_APPROVED_STATUS, DataSFClient
+from app.core.cache import TTLCache
 from app.schemas.api import Coordinates, FoodTruckListResponse, FoodTruckResponse
 from app.schemas.food_truck import FoodTruck
 from app.schemas.query import FoodTruckSearchParams
@@ -39,20 +40,56 @@ def _contains(haystack: str | None, needle: str) -> bool:
 
 
 class FoodTruckService:
-    """Application service orchestrating DataSF retrieval and search logic."""
+    """Application service orchestrating DataSF retrieval and search logic.
 
-    def __init__(self, client: DataSFClient) -> None:
+    Caching is applied to the upstream DataSF fetch, keyed by the
+    parameters that affect the upstream result (the permit ``status``
+    filter). Radius, search, and pagination parameters are applied
+    in-process and therefore do not affect the cached upstream payload.
+    """
+
+    def __init__(
+        self,
+        client: DataSFClient,
+        cache: TTLCache[list[FoodTruck]] | None = None,
+    ) -> None:
         self._client = client
+        self._cache = cache
 
     async def search(self, params: FoodTruckSearchParams) -> FoodTruckListResponse:
         """Search food trucks near the requested location.
 
-        Fetches the source dataset through the DataSF client, then filters
-        by radius, search text, and food type, sorts nearest-first, and
-        paginates.
+        Fetches the source dataset through the DataSF client (cached),
+        then filters by radius, search text, and food type, sorts
+        nearest-first, and paginates.
         """
-        trucks = await self._client.fetch_food_trucks()
+        trucks = await self._get_all_trucks()
         return self.filter_and_paginate(trucks, params)
+
+    async def _get_all_trucks(self, status: str = DATASF_APPROVED_STATUS) -> list[FoodTruck]:
+        """Fetch the full truck list, serving repeat requests from cache."""
+        if self._cache is None or not self._cache.enabled:
+            return await self._client.fetch_food_trucks(status=status)
+
+        key = self._cache_key(status)
+        cached = self._cache.get(key)
+        if cached is not None:
+            logger.info("Cache hit for %s (%d trucks)", key, len(cached))
+            return cached
+
+        logger.info("Cache miss for %s - fetching from DataSF", key)
+        trucks = await self._client.fetch_food_trucks(status=status)
+        self._cache.set(key, trucks)
+        return trucks
+
+    @staticmethod
+    def _cache_key(status: str) -> str:
+        """Canonical cache key for an upstream fetch.
+
+        Includes every parameter that affects the upstream result; extend
+        here if more upstream query parameters are introduced.
+        """
+        return f"datasf:food_trucks:status={status}"
 
     def filter_and_paginate(
         self, trucks: list[FoodTruck], params: FoodTruckSearchParams

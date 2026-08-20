@@ -264,3 +264,22 @@ def test_datasf_non_list_body_returns_502_envelope(client: TestClient) -> None:
 
     assert response.status_code == 502
     assert response.json()["error"]["code"] == "DATASF_INVALID_RESPONSE"
+
+
+# ---------------------------------------------------------------------------
+# Caching
+# ---------------------------------------------------------------------------
+
+
+@respx.mock
+def test_upstream_is_fetched_once_across_api_requests(client: TestClient) -> None:
+    route = respx.get(url__startswith=DATASF_TEST_URL).mock(
+        return_value=httpx.Response(200, json=RAW_PAYLOAD)
+    )
+
+    client.get("/api/v1/food-trucks", params=SF_QUERY)
+    client.get("/api/v1/food-trucks", params={**SF_QUERY, "search": "golden"})
+    client.get("/api/v1/food-trucks", params={**SF_QUERY, "radius": "5", "food_type": "taco"})
+
+    # All three requests reuse the same cached upstream payload.
+    assert len(route.calls) == 1

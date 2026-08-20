@@ -16,9 +16,11 @@ from fastapi.responses import JSONResponse
 
 from app.api.router import api_router
 from app.clients.datasf import create_datasf_client
+from app.core.cache import TTLCache
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.exceptions.errors import AppError
+from app.schemas.food_truck import FoodTruck
 from app.services.food_trucks import FoodTruckService
 
 API_V1_PREFIX = "/api/v1"
@@ -34,11 +36,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         base_url=settings.datasf_base_url,
         timeout_seconds=settings.datasf_timeout_seconds,
     )
-    app.state.food_truck_service = FoodTruckService(client=datasf_client)
+    cache = TTLCache[list[FoodTruck]](ttl_seconds=settings.cache_ttl_seconds)
+    app.state.food_truck_service = FoodTruckService(client=datasf_client, cache=cache)
     logger.info(
-        "Food Truck Finder API started (env=%s, datasf=%s)",
+        "Food Truck Finder API started (env=%s, datasf=%s, cache_ttl=%ss)",
         settings.app_env,
         settings.datasf_base_url,
+        settings.cache_ttl_seconds,
     )
     try:
         yield
