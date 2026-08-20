@@ -1,12 +1,16 @@
 /**
  * Interactive Leaflet map for food truck results.
  *
- * Pure presentation: given a center, truck list, and optional user
+ * Presentation component: given a center, truck list, and optional user
  * location, it renders markers, popups, and the user's position.
- * All data comes from props - no fetching happens here.
+ *
+ * Synchronization with the result list:
+ * - clicking a marker reports the truck via `onSelectTruck`;
+ * - the parent can focus a truck's marker imperatively through the
+ *   `MapViewHandle` exposed via ref (fly-to + open popup).
  */
 
-import { useEffect } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import L from 'leaflet'
 import {
   MapContainer,
@@ -34,10 +38,24 @@ function FlyToCenter({ center }: { center: Coordinates }) {
   return null
 }
 
-function createTruckIcon() {
+/** Bridges the Leaflet map instance out to MapView's ref for imperative use. */
+function MapBridge({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap()
+
+  useEffect(() => {
+    mapRef.current = map
+    return () => {
+      mapRef.current = null
+    }
+  }, [map, mapRef])
+
+  return null
+}
+
+function createTruckIcon(selected: boolean) {
   return L.divIcon({
     className: 'truck-marker',
-    html: '<div class="truck-pin" aria-hidden="true"></div>',
+    html: `<div class="truck-pin${selected ? ' truck-pin--selected' : ''}" aria-hidden="true"></div>`,
     iconSize: [28, 38],
     iconAnchor: [14, 36],
     popupAnchor: [0, -32],
@@ -53,20 +71,45 @@ function createUserIcon() {
   })
 }
 
+export interface MapViewHandle {
+  /** Fly to the truck's marker and open its popup. */
+  focusTruck: (truck: FoodTruck) => void
+}
+
 interface MapViewProps {
   center: Coordinates
   trucks: FoodTruck[]
   userLocation: Coordinates | null
+  selectedTruckId: string | null
   onSelectTruck?: (truck: FoodTruck) => void
 }
 
-export function MapView({ center, trucks, userLocation, onSelectTruck }: MapViewProps) {
+export const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView(
+  { center, trucks, userLocation, selectedTruckId, onSelectTruck },
+  ref,
+) {
+  const mapRef = useRef<L.Map | null>(null)
+  const markerRefs = useRef<Record<string, L.Marker>>({})
+
+  useImperativeHandle(ref, () => ({
+    focusTruck: (truck: FoodTruck) => {
+      const map = mapRef.current
+      const marker = markerRefs.current[truck.id]
+      if (!map || !marker) return
+      map.flyTo([truck.latitude, truck.longitude], Math.max(map.getZoom(), 16), {
+        duration: 0.7,
+      })
+      marker.openPopup()
+    },
+  }))
+
   return (
     <MapContainer
       center={[center.latitude, center.longitude]}
       zoom={14}
       className="map-container"
     >
+      <MapBridge mapRef={mapRef} />
       <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} />
       <FlyToCenter center={center} />
 
@@ -74,7 +117,11 @@ export function MapView({ center, trucks, userLocation, onSelectTruck }: MapView
         <Marker
           key={truck.id}
           position={[truck.latitude, truck.longitude]}
-          icon={createTruckIcon()}
+          icon={createTruckIcon(selectedTruckId === truck.id)}
+          ref={(instance) => {
+            if (instance) markerRefs.current[truck.id] = instance
+            else delete markerRefs.current[truck.id]
+          }}
           eventHandlers={{ click: () => onSelectTruck?.(truck) }}
         >
           <Popup>
@@ -103,4 +150,4 @@ export function MapView({ center, trucks, userLocation, onSelectTruck }: MapView
       )}
     </MapContainer>
   )
-}
+})
