@@ -1,5 +1,24 @@
-* {
+/* ---------------------------------------------------------------------------
+ * Food Truck Finder - global styles and responsive layout foundation.
+ * ------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+:root {
+  --color-primary: #e63946;
+  --color-primary-dark: #c1121f;
+  --color-dark: #1d3557;
+  --color-light: #f8f9fa;
+  --color-white: #ffffff;
+  --color-text: #212529;
+  --color-muted: #6c757d;
+  --color-border: #dee2e6;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 html,
@@ -10,11 +29,69 @@ body,
 }
 
 body {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-light);
+  -webkit-font-smoothing: antialiased;
 }
 
-.app {
+/* ----- Application shell ----- */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.25rem;
+  background-color: var(--color-dark);
+  color: var(--color-white);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.app-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-placeholder {
   display: grid;
   place-items: center;
   height: 100%;
+  margin: 0;
+  padding: 1rem;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* ----- Responsive tweaks ----- */
+
+@media (max-width: 600px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+  }
 }
