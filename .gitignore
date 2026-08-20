@@ -24,6 +24,7 @@ dist-ssr/
 
 # ---- Docker ----
 *.pid
+*.log
 
 # ---- OS / editor ----
 .DS_Store

@@ -1,0 +1,13 @@
+"""Shared pytest fixtures."""
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+
+@pytest.fixture
+def client() -> TestClient:
+    """Test client bound to the running application lifespan."""
+    with TestClient(app) as test_client:
+        yield test_client
