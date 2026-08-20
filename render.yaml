@@ -20,4 +20,4 @@ services:
         value: "300"
       # Replace with your deployed frontend origin.
       - key: CORS_ORIGINS
-        value: https://food-truck-finder.vercel.app
+        value: http://localhost:5173,http://127.0.0.1:5173,https://kjbn-assignment.vercel.app
