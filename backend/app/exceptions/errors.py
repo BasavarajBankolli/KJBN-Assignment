@@ -69,3 +69,27 @@ class DataSFInvalidResponseError(DataSFError):
     code = "DATASF_INVALID_RESPONSE"
     status_code = 502
     message = "The DataSF service returned an unexpected response."
+
+
+class InvalidLocationError(AppError):
+    """Client supplied invalid or missing geographic coordinates."""
+
+    code = "INVALID_LOCATION"
+    status_code = 422
+    message = "Invalid location parameters."
+
+
+class InvalidRadiusError(AppError):
+    """Client supplied an out-of-bounds search radius."""
+
+    code = "INVALID_RADIUS"
+    status_code = 422
+    message = "Invalid radius parameter."
+
+
+class InvalidPaginationError(AppError):
+    """Client supplied invalid limit/offset values."""
+
+    code = "INVALID_PAGINATION"
+    status_code = 422
+    message = "Invalid pagination parameters."
