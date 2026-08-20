@@ -102,7 +102,7 @@ Interactive docs at `http://localhost:8000/docs` (Swagger UI) or `/redoc`.
 Liveness probe.
 
 ```json
-{ "status": "ok", "app": "food-truck-finder-api", "version": "0.1.0" }
+{ "status": "ok", "app": "Food Truck Finder API", "version": "1.0.0", "environment": "development" }
 ```
 
 ### `GET /api/v1/food-trucks`
@@ -127,8 +127,8 @@ Finds permitted food trucks near a location.
   "total": 36,
   "limit": 20,
   "offset": 0,
-  "radiusKm": 2.0,
-  "center": { "lat": 37.7879, "lng": -122.4075 },
+  "radius_km": 2.0,
+  "center": { "latitude": 37.7879, "longitude": -122.4075 },
   "trucks": [
     {
       "id": "1500074",
@@ -185,7 +185,7 @@ curl -i "http://localhost:8000/api/v1/food-trucks?lat=999&lng=0"
 | `DATASF_BASE_URL` | `https://data.sfgov.org/resource/rqzj-sfat.json` | Upstream SODA dataset URL |
 | `DATASF_TIMEOUT_SECONDS` | `10` | Upstream request timeout |
 | `CACHE_TTL_SECONDS` | `300` | Cache TTL; `0` disables caching |
-| `CORS_ORIGINS` | `http://localhost:5173,http://localhost:8080` | Comma-separated allowed origins |
+| `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated allowed origins (docker-compose overrides this to include `http://localhost:8080`) |
 | `VITE_API_BASE_URL` *(frontend)* | `http://localhost:8000` | Backend URL baked in at build time; empty = same-origin |
 
 All backend variables have sane defaults (see `backend/.env.example`); the app runs without any configuration.
