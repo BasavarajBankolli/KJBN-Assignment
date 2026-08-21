@@ -74,7 +74,7 @@ def create_app() -> FastAPI:
             "http://localhost:5173",
             "http://127.0.0.1:5173",
             "https://kjbn-assignment.vercel.app",
-        ] + [origin for origin in settings.cors_origin_list if origin not in ("*", "")],
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
